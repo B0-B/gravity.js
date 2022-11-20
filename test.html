@@ -8,25 +8,26 @@
 
             /* Tuning */
             blur_factor = 5.0;              // unit-less
-            dt = 10                         // years
+            dt = 10e+7                      // years
             g_scale_factor = 10e+0;
-            galaxy_size = 50000;            // light years
+            size = 20000;                   // light years
             imf_alpha = 2.35;
-            plot_scale = 0.005;
-            plummer_bulge = 3000;            // light years
+            init_velocity_scale = 10e+18;
+            plot_rate = 100                   // timesteps
+            plot_scale = 0.01;
+            plummer_bulge = 1000;            // light years
             star_color = [
                 '#c210bc', 
                 '#f71a0a', 
                 '#f3f70a', 
                 '#f7f7da', 
                 '#94fff3'];
-            star_mass_max = 2;
+            star_mass_max = 5;
             star_mass_min = .1;
             star_scale_factor = 1;          // unit-less
             time_delay_ms = 0;              // milliseconds
-            v_start = 10;
-            N = 300;                        // unit-less
-            T = 10e+9;                      // years
+            N = 1000;                        // unit-less
+            T = 10e+30;                      // years
 
             /* All parameters are in SI-units */
             const   m_sun = 1.989e+30,
@@ -43,7 +44,7 @@
             document.body.appendChild(canvas);
             ctx.canvas.width=w;ctx.canvas.height=h;document.body.style.background='#04050d';
             async function cl(){ctx.clearRect(0,0,canvas.width,canvas.height)}
-            function draw(x,y,scale,col='#000'){
+            function draw(x,y,scale,col){
                 ctx.fillStyle=col;
                 
                 ctx.beginPath();
@@ -56,38 +57,49 @@
                 ctx.arc(Math.floor(x+center[0]),Math.floor(y+center[1]), scale*star_scale_factor, 0, 2 * Math.PI);
                 ctx.fill();
             }
-
             /* Vectors & Gravity */
             function dist(v,w){return [w[0]-v[0],w[1]-v[1]]}
             function dot(v,w){return v[0]*w[0]+v[1]*w[1]}
-            function mag(v){return Math.sqrt(dot(v,v))}
+            function mag(v){console.log('dot',dot(v,v));return dot(v,v)**.5}
             function a_plummer(v,w,m,a){
                 // star at vector w acts on star described by v
                 r = dist(v,w);
                 c = g_scale_factor*G*m/((dot(r,r)+a**2)**(1.5));
                 return [c*r[0],c*r[1]]
             }
-
+            // function kepler(r,M){d=mag(r.slice(1,3));v=G*M/(Math.sqrt(d));console.log(d,Math.sqrt(d));return[-v/d*r[1],v/d*r[0]]}
+            function v0(){
+                for (s in S) {
+                    r=S[s].slice(1,3);
+                    d=mag(r)
+                    // d=(r[0]**2+r[1]**2)**.5;
+                    M=0;
+                    for(n in S){
+                        sv=S[n].slice(1,3);
+                        if(mag(sv)<d){
+                            M+=S[n][0]
+                        }
+                    }
+                    kep=G*M/(d**.5)*init_velocity_scale;
+                    S[s][3]=-kep/d*r[1];
+                    S[s][4]=kep/d*r[0]}
+            }
             /* Sampling */
             function u(){return Math.random()};
             function boxMuller(){x=u();A=Math.sqrt(-2*Math.log(u()));return[A*Math.cos(2*Math.PI*x),A*Math.sin(2*Math.PI*x)]}
-            function star(){
-                const[x,y]=boxMuller();
-                const[v,w]=boxMuller();
-                const col = star_color[Math.floor(u()*5)];
-                const m = u()*(star_mass_max-star_mass_min)+star_mass_min;
-                return [m,x*galaxy_size*ly,y*galaxy_size*ly,v*v_start,w*v_start,col]}
-            
+            function star(){const[x,y]=boxMuller();const m=u()*(star_mass_max-star_mass_min)+star_mass_min;const col=star_color[Math.floor(u()*5)];return[m,x*size*ly,y*size*ly,0,0,col]}
             // algorithm
             S = {}
-            function init () {for (i=0;i<N;i++){S[i] = star()}}
+            function scatter () {for (i=0;i<N;i++){S[i] = star()}}
             async function plot () {for (s in S){draw(Math.floor(plot_scale*S[s][1]/ly),Math.floor(plot_scale*S[s][2]/ly),S[s][0],S[s][5])}}
             async function leapFrog () {
                 t=0;
-                delta_t = dt*ly;
+                _dt=dt*yr;
                 while (t<T) {
-                    await cl();
-                    await plot();
+                    if (t%plot_rate==0){
+                        await cl();
+                        await plot();
+                    }
                     for (p1 in S) {
                         // determine net acceleration
                         a = [0,0];
@@ -97,23 +109,25 @@
                             a[0] = a[0] + f[0];
                             a[1] = a[1] + f[1];
                         }
-                        const[a_x,a_y]=[a[0]*delta_t*.5,a[1]*delta_t*.5];
+                        const[dvx,dvy]=[a[0]*_dt*.5,a[1]*_dt*.5];
                         // kick
-                        v_half_x = S[p1][3] + a_x;
-                        v_half_y = S[p1][4] + a_y;
+                        v_m_x = S[p1][3] + dvx;
+                        v_m_y = S[p1][4] + dvy;
                         // drift
-                        S[p1][1] = S[p1][1] + v_half_x*delta_t;
-                        S[p1][2] = S[p1][2] + v_half_y*delta_t;
+                        S[p1][1] = S[p1][1] + v_m_x*_dt;
+                        S[p1][2] = S[p1][2] + v_m_y*_dt;
                         // kick
-                        S[p1][3] = v_half_x + a_x;
-                        S[p1][4] = v_half_y + a_y;
+                        S[p1][3] = v_m_x + dvx;
+                        S[p1][4] = v_m_y + dvy;
                     }
                     await new Promise(r => setTimeout(r, time_delay_ms));
-                    t += dt;
+                    t+=dt;
                 }
             }
             // start
-            init();leapFrog();
+            scatter();
+            v0();
+            leapFrog();
 
         </script>
     </body>
