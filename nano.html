@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        
-    </head>
     <body>
         <script>
             /*░░░░░░░░░░░░░░░░░░░░░░ Galaxy Parameters ░░░░░░░░░░░░░░░░░░░░░░
-            N-body sim with Plummer potential and leap-frog integrator     */
+            N-body sim engine with Plummer potential and leap-frogging algo*/
             blur_factor = 5.0;              // unit-less                 ★
             dt = 10e+7                      // years            ★
             g_scale_factor = 10e+0;
@@ -32,8 +29,8 @@
                     ly = 9.46e+15,
                     pc = 3.086e+19,
                     yr = 31.536e+6;
-            /*░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░*/
-            const[D,M,F]=[document,Math,Math.floor];
+            //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+            const[D,M,F]=[document,Math,Math.floor];//░░░░░ github.com/B0-B ░░
             [w,h]=[window.innerWidth,window.innerHeight];C=[F(w/2),F(h/2)];cv=
             D.createElement('canvas');X=cv.getContext('2d');D.body.appendChild
             (cv);X.canvas.width=w;X.canvas.height=h;D.body.style.background=
