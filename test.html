@@ -46,11 +46,9 @@
             async function cl(){ctx.clearRect(0,0,canvas.width,canvas.height)}
             function draw(x,y,scale,col){
                 ctx.fillStyle=col;
-                
                 ctx.beginPath();
                 ctx.arc(Math.floor(x+center[0]),Math.floor(y+center[1]), scale*star_scale_factor, 0, 2 * Math.PI);
                 ctx.fill();
-
                 ctx.shadowBlur = scale*blur_factor;
 	            ctx.shadowColor = col;
                 ctx.beginPath();
