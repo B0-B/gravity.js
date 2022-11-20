@@ -4,26 +4,25 @@
         <script>
             /*░░░░░░░░░░░░░░░░░░░░░░ Galaxy Parameters ░░░░░░░░░░░░░░░░░░░░░░
             N-body sim engine with Plummer potential and leap-frogging algo*/
-            blur_factor = 5.0;              // unit-less                 ★
-            dt = 10e+7                      // years            ★
-            g_scale_factor = 10e+0;
-            size = 20000;                   // light years       ★     ★
-            imf_alpha = 2.35;
+            blur_factor = 5.0;              // star blur unit-less        
+            dt = 10e+7                      // timestep in years           
+            g_scale_factor = 10e+0;         // gravity constant scale
+            size = 20000;                   // light years    
             velocity_scl = 10e+18;
-            plot_scale = 0.01;
-            plummer_bulge = 1000;            // light years          ★
+            plot_scale = 0.01;              // zoom factor (if 1: 1px=1ly)
+            plummer_bulge = 1000;           // light years          
             star_color = [
                 '#c210bc', 
                 '#f71a0a',                      
                 '#f3f70a', 
                 '#f7f7da', 
                 '#94fff3'];
-            star_mass_max = 5;
-            star_mass_min = .1;
+            star_mass_max = 5;              // max sun masses
+            star_mass_min = .1;             // min sun masses
             star_scale_factor = 1;          // unit-less
-            time_delay_ms = 0;              // milliseconds       ★
-            N = 500;                        // unit-less                   ★
-            T = 10e+30;                      // years         ★
+            time_delay_ms = 0;              // milliseconds     
+            N = 500;                        // unit-less           
+            T = 10e+30;                     // years        
             const   m_sun = 1.989e+30,
                     G = 6.67430e-11,
                     ly = 9.46e+15,
