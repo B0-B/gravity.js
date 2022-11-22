@@ -12,7 +12,7 @@
             g_scale_factor = 10e+0;
             size = 20000;                   // light years
             imf_alpha = 2.35;
-            init_velocity_scale = 10e+18;
+            init_velocity_scale = 10e+0;
             plot_rate = 10                   // timesteps
             plot_scale = 0.01;
             plummer_bulge = 1000;            // light years
@@ -25,9 +25,9 @@
             star_mass_max = 5;
             star_mass_min = .1;
             star_scale_factor = 1;          // unit-less
-            time_delay_ms = 0;              // milliseconds
-            N = 100;                        // unit-less
-            T = 10e+30;                      // years
+            time_delay_ms = 10000;              // milliseconds
+            N = 50;                        // unit-less
+            T = 10e+12;                      // years
 
             /* All parameters are in SI-units */
             const   m_sun = 1.989e+30,
@@ -56,21 +56,22 @@
                 ctx.fill();
             }
             /* Vectors & Gravity */
-            function dist(v,w){return [w[0]-v[0],w[1]-v[1]]}
+            const Null = [0,0];
+            function add(v,w,s=1){return [v[0]+s*w[0],v[1]+s*w[1]]}
+            function dist(v,w){return add(v,w,-1)}
             function dot(v,w){return v[0]*w[0]+v[1]*w[1]}
-            function mag(v){console.log('dot',dot(v,v));return dot(v,v)**.5}
+            function mag(v){return dot(v,v)**.5}
+            function scl(a,v){return [a*v[0],a*v[1]]}
             function a_plummer(v,w,m,a){
                 // star at vector w acts on star described by v
                 r = dist(v,w);
                 c = g_scale_factor*G*m/((dot(r,r)+a**2)**(1.5));
-                return [c*r[0],c*r[1]]
+                return scl(c,r)
             }
-            // function kepler(r,M){d=mag(r.slice(1,3));v=G*M/(Math.sqrt(d));console.log(d,Math.sqrt(d));return[-v/d*r[1],v/d*r[0]]}
             function v0(){
                 for (s in S) {
                     r=S[s].slice(1,3);
                     d=mag(r)
-                    // d=(r[0]**2+r[1]**2)**.5;
                     M=0;
                     for(n in S){
                         sv=S[n].slice(1,3);
@@ -78,14 +79,15 @@
                             M+=S[n][0]
                         }
                     }
-                    kep=G*M/(d**.5)*init_velocity_scale;
+                    kep=G*M*m_sun/(d**.5)*init_velocity_scale;
                     S[s][3]=-kep/d*r[1];
-                    S[s][4]=kep/d*r[0]}
+                    S[s][4]=kep/d*r[0]
+                }
             }
             /* Sampling */
             function u(){return Math.random()};
             function boxMuller(){x=u();A=Math.sqrt(-2*Math.log(u()));return[A*Math.cos(2*Math.PI*x),A*Math.sin(2*Math.PI*x)]}
-            function star(){const[x,y]=boxMuller();const m=u()*(star_mass_max-star_mass_min)+star_mass_min;const col=star_color[Math.floor(u()*5)];return[m,x*size*ly,y*size*ly,0,0,col]}
+            function star(){const[x,y]=boxMuller();const m=u()*(star_mass_max-star_mass_min)+star_mass_min;const col=star_color[Math.floor(u()*5)];return[m,x*size*ly,y*size*ly,0,0,col,[0,0]]}
             // algorithm
             S = {}
             function scatter () {for (i=0;i<N;i++){S[i] = star()}}
@@ -95,43 +97,86 @@
                 t=0;
                 _dt=dt*yr;
                 count=0;
+
                 while (t<T) {
 
                     // refresh plot after plot rate was reached
                     count++;
                     if (count > plot_rate) {
+                        console.log(t)
                         await cl();
                         plot();
                         count=0;
                     }
-                    
-                    for (p1 in S) {
+
+                    stop=Object.values(S).length;
+                    for (i=0;i<stop;i++) {
+
+                        // determine origin star point
+                        p1 = S[i];
+
+                        // define kinematic objects for current point
+                        x = p1.slice(1,3);
+                        v = p1.slice(3,5);
+                        a = p1[6];
+                        // console.log(i,x,v,a)
+                        
                         // determine net acceleration
-                        a = [0,0];
-                        for (p2 in S) {
-                            if (p2 == p1) {continue}
-                            const f = a_plummer(S[p1].slice(1,3),S[p2].slice(1,3),S[p2][0]*m_sun,plummer_bulge*ly)
-                            a[0] = a[0] + f[0];
-                            a[1] = a[1] + f[1];
+                        // start iteration from next star id and ascend
+                        start=parseInt(p1)+1;
+                        for(j=start;j<stop;j++){
+
+                            // interacting point
+                            p2=S[j];
+                            y=p2.slice(1,3);
+
+                            // compute force action with single sun mass
+                            f_a = a_plummer(x,y,m_sun,plummer_bulge*ly)
+
+                            // add reactio contribution directly to interacting star
+                            // multiply with origin star mass
+                            S[j][6]=add(p2[6],f_a,-p1[0]);
+
+                            // add to current acceleration
+                            a = add(a,f_a,p2[0])
                         }
-                        const[dvx,dvy]=[a[0]*_dt*.5,a[1]*_dt*.5];
+
+                        // for (p2 in S) {
+                        //     if (p2 == p1) {continue}
+                        //     const f = a_plummer(S[p1].slice(1,3),S[p2].slice(1,3),S[p2][0]*m_sun,plummer_bulge*ly)
+                        //     a[0] = a[0] + f[0];
+                        //     a[1] = a[1] + f[1];
+                        // }
+
+                        // const[dvx,dvy]=[a[0]*_dt*.5,a[1]*_dt*.5];
+                        console.log('a',a)
+                        dv=scl(_dt*.5,a);//[a[0]*_dt*.5,a[1]*_dt*.5];
+                        console.log('dv',dv)
+                        // from here on acceleration is not needed anymore so reset it in star object
+                        S[i][6]=Null;
+
                         // kick
-                        v_m_x = S[p1][3] + dvx;
-                        v_m_y = S[p1][4] + dvy;
+                        // v_m_x = S[p1][3] + dvx;
+                        // v_m_y = S[p1][4] + dvy;
+                        v_h = add(v,dv)
                         // drift
-                        S[p1][1] = S[p1][1] + v_m_x*_dt;
-                        S[p1][2] = S[p1][2] + v_m_y*_dt;
+                        S[i][1] = x[0] + v_h[0] * _dt;
+                        S[i][2] = x[1] + v_h[1] * _dt;
                         // kick
-                        S[p1][3] = v_m_x + dvx;
-                        S[p1][4] = v_m_y + dvy;
+                        S[i][3] = 2*dv[0];
+                        S[i][4] = 2*dv[1];
                     }
-                    await new Promise(r => setTimeout(r, time_delay_ms));
+
+
+                    if (time_delay_ms>0){await new Promise(r => setTimeout(r, time_delay_ms))}
+                    
                     t+=dt;
                 }
             }
             // start
             scatter();
             v0();
+            // plot()
             leapFrog();
 
         </script>
