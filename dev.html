@@ -12,8 +12,8 @@
             dt = 10e+7                      // timestep in years
             g_scale_factor = 10e+0;         // gravity constant scale
             size = 20000;                   // light years
-            velocity_scale = 1.2*10e-12;    // scale initial kepler velocity   
-            plot_rate = 1                   // timesteps
+            velocity_scale = 1.5;           // scale initial kepler velocity   
+            plot_rate = 1;                   // timesteps
             plot_scale = 0.01;              // zoom factor (if 1: 1px=1ly)
             plummer_bulge = 1000;           // light years
             star_color = ['#f5dedc','#c9ffdd','#c2dcff','#c2fffe','#171006'];
@@ -77,7 +77,7 @@
                             M+=S[n][0]
                         }
                     }
-                    kep=G*M*m_sun/(d**.5)*velocity_scale;
+                    kep=(G*M*m_sun/d)**.5*velocity_scale;
                     S[s][3]=-kep/d*r[1];
                     S[s][4]=kep/d*r[0]
                 }
