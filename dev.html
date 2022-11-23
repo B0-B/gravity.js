@@ -6,7 +6,7 @@
     <body>
         <script>
 
-            /* Tuning */
+            /*░░░░░░░░░░░░░░░░░░░░░░ Galaxy Parameters ░░░░░░░░░░░░░░░░░░░░░░*/
             blur_factor = 5.0;              // star light blur unit-less 
             blur_star_edge = 1;             // star edge blur unit-less
             dt = 10e+7                      // timestep in years
@@ -19,18 +19,18 @@
             star_color = ['#f5dedc','#c9ffdd','#c2dcff','#c2fffe','#171006'];
             star_mass_max = 5;
             star_mass_min = .1;
-            star_scale_factor = .5;          // unit-less
-            time_delay_ms = 1;              // milliseconds
-            N = 500;                        // unit-less
+            star_scale_factor = .3;          // unit-less
+            time_delay_ms = 0;              // milliseconds
+            N = 400;                        // unit-less
             T = 10e+12;                      // years
-
             /* All parameters are in SI-units */
             const   m_sun = 1.989e+30,
                     G = 6.67430e-11,
                     ly = 9.46e+15,
                     pc = 3.086e+19,
                     yr = 31.536e+6;
-            
+            /*░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░*/
+
             /* Canvas UI */
             const [w,h] = [window.innerWidth,window.innerHeight];
             const center = [Math.floor(w/2),Math.floor(h/2)];
