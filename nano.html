@@ -5,12 +5,12 @@
             /*░░░░░░░░░░░░░░░░░░░░░░ Galaxy Parameters ░░░░░░░░░░░░░░░░░░░░░░
             N-body sim engine with Plummer potential and leap-frogging algo*/
             blur_factor = 5.0;              // star blur unit-less        
-            dt = 10e+8                      // timestep in years           
+            dt = 10e+7                      // timestep in years           
             g_scale_factor = 10e+0;         // gravity constant scale
             size = 20000;                   // light years    
-            velocity_scl = 10e+18;
+            velocity_scl = 10e-12;
             plot_scale = 0.01;              // zoom factor (if 1: 1px=1ly)
-            plummer_bulge = 500;           // light years          
+            plummer_bulge = 1000;           // light years          
             star_color = [
                 '#f5dedc', 
                 '#c9ffdd',                      
@@ -21,9 +21,9 @@
             star_mass_min = .1;             // min sun masses
             star_scale_factor = 1;          // unit-less
             time_delay_ms = 0;              // milliseconds     
-            N = 500;                        // number of stars          
+            N = 1000;                        // number of stars          
             T = 10e+30;                     // total sim epoch in years        
-            const   m_sun = 1.989e+30,
+            const   m_sun = 1.988e+30,
                     G = 6.67430e-11,
                     ly = 9.46e+15,
                     yr = 31.536e+6;
@@ -41,12 +41,12 @@
             (v,w,m,a){r=dist(v,w);c=g_scale_factor*G*m/((dot(r,r)+a**2)**(1.5))
             return[c*r[0],c*r[1]]}function v0(){for(s in S){r=S[s].slice(1,3);d 
             =mag(r);m=0;for(n in S){sv=S[n].slice(1,3);if(mag(sv)<d){m+=S[n][0]
-            }}kep=G*m/(d**.5)*velocity_scl;S[s][3]=-kep/d*r[1];S[s][4]=kep/d*r[
-            0]}}function u(){return M.random()}function bm(){x=u();A=M.sqrt(-2*
-            M.log(u()));return[A*M.cos(2*M.PI*x),A*M.sin(2*M.PI*x)]}function 
-            star(){const[x,y]=bm();m=u()*(star_mass_max-star_mass_min)+
-            star_mass_min;col=star_color[F(u()*5)];return[m,x*size*ly,y*size*ly
-            ,0,0,col]}S={};function scatter(){for(i=0;i<N;i++){S[i]=star()}}
+            }}kep=G*m/(d**.5)*velocity_scl*m_sun;S[s][3]=-kep/d*r[1];S[s][4]=
+            kep/d*r[0]}}function u(){return M.random()}function bm(){x=u();A=M.
+            sqrt(-2*M.log(u()));return[A*M.cos(2*M.PI*x),A*M.sin(2*M.PI*x)]}
+            function star(){const[x,y]=bm();m=u()*(star_mass_max-star_mass_min)
+            +star_mass_min;col=star_color[F(u()*5)];return[m,x*size*ly,y*size*
+            ly,0,0,col]}S={};function scatter(){for(i=0;i<N;i++){S[i]=star()}}
             async function plot(){for(s in S){draw(F(plot_scale*S[s][1]/ly),F(
             plot_scale*S[s][2]/ly),S[s][0],S[s][5])}}async function lf(){t=0;
             _dt=dt*yr;while(t<T){X.clearRect(0,0,cv.width,cv.height);plot();for
