@@ -1,0 +1,180 @@
+(async () => {
+
+    /*░░░░░░░░░░░░░░░░░░░░░░ Galaxy Parameters ░░░░░░░░░░░░░░░░░░░░░░*/
+    blur_factor = 5.0;              // star light blur unit-less 
+    blur_star_edge = 1;             // star edge blur unit-less
+    dt = 10e+7                      // timestep in years
+    variable_timestep = true        // if time step should vary
+    g_scale_factor = 10e+0;         // gravity constant scale
+    size = 20000;                   // light years
+    velocity_scale = 3;             // scale initial kepler velocity   
+    plot_rate = 1;                  // timesteps
+    plot_scale = 0.01;              // zoom factor (if 1: 1px=1ly)
+    plummer_bulge = 1000;           // light years
+    show_iter_time = true           // boolean, will show ms in console
+    star_color = ['#f5dedc','#c9ffdd','#c2dcff','#c2fffe','#171006'];
+    star_mass_max = 5;
+    star_mass_min = .1;
+    star_scale_factor = .3;         // unit-less
+    time_delay_ms = 0;              // milliseconds
+    N = 500;                        // unit-less
+    T = 10e+12;                     // years
+    /* All parameters are in SI-units */
+    const   m_sun = 1.989e+30,
+            G = 6.67430e-11,
+            ly = 9.46e+15,
+            pc = 3.086e+19,
+            yr = 31.536e+6;
+    /*░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░*/
+
+    /* Canvas UI */
+    const [w,h] = [window.innerWidth,window.innerHeight];
+    const center = [Math.floor(w/2),Math.floor(h/2)];
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    document.body.appendChild(canvas);
+    ctx.canvas.width=w;ctx.canvas.height=h;document.body.style.background='#04050d';
+    async function cl(){ctx.clearRect(0,0,canvas.width,canvas.height)}
+    function sleep(t){return new Promise(r=>setTimeout(r,t))}
+    function draw(x,y,scale,col){
+        ctx.fillStyle=col;
+        ctx.shadowBlur = scale*blur_star_edge;
+        ctx.beginPath();
+        ctx.arc(Math.floor(x+center[0]),Math.floor(y+center[1]), scale*star_scale_factor, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.shadowBlur = scale*blur_factor;
+        ctx.shadowColor = col;
+        ctx.beginPath();
+        ctx.arc(Math.floor(x+center[0]),Math.floor(y+center[1]), scale*star_scale_factor, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    /* Integrated Methods */
+    
+    function sq (x) {
+        /* Benchmarked with 1000 particles */
+        return Math.sqrt(x)               //
+        //return x**.5                      // 280ms
+        //return Math.pow(x,.5)             // 
+    }
+    /* Vectors & Gravity */
+    const Null = [0,0];
+    function add(v,w,s=1){return [v[0]+s*w[0],v[1]+s*w[1]]}
+    function dist(v,w){return add(v,w,-1)}
+    function dot(v,w){return v[0]*w[0]+v[1]*w[1]}
+    function mag(v){return sq(dot(v,v))}
+    function scl(a,v){return [a*v[0],a*v[1]]}
+    function a_plummer(v,w,m,a){
+        // star at vector w acts on star described by v
+        r = dist(v,w);
+        c = g_scale_factor*G*m/(sq((dot(r,r)+a**2)**3));
+        return scl(c,r)
+    }
+    function v0(){
+        for (s in S) {
+            r=S[s].slice(1,3);
+            d=mag(r)
+            M=0;
+            for(n in S){
+                sv=S[n].slice(1,3);
+                if(mag(sv)<d){
+                    M+=S[n][0]
+                }
+            }
+            kep=sq(G*M*m_sun/d)*velocity_scale;
+            S[s][3]=-kep/d*r[1];
+            S[s][4]=kep/d*r[0]
+        }
+    }
+    /* Sampling */
+    function u(){return Math.random()};
+    function boxMuller(){x=u();A=sq(-2*Math.log(u()));return[A*Math.cos(2*Math.PI*x),A*Math.sin(2*Math.PI*x)]}
+    function star(){const[x,y]=boxMuller();const m=u()*(star_mass_max-star_mass_min)+star_mass_min;const col=star_color[Math.floor(u()*5)];return[m,x*size*ly,y*size*ly,0,0,col,[0,0]]}
+    
+    /* Algorithm */
+    S = {}
+    function scatter () {for (i=0;i<N;i++){S[i] = star()}}
+    async function plot () {for (s in S){draw(Math.floor(plot_scale*S[s][1]/ly),Math.floor(plot_scale*S[s][2]/ly),S[s][0],S[s][5])}}
+    async function leapFrog () {
+
+        t=0;
+        _dt=dt*yr;
+        count=0;
+        exp_smoothing=0.2
+        mean_iter_time = 0
+        
+        while (t<T) {
+
+            if (show_iter_time){start_time = Date.now()}
+
+            // refresh plot after plot rate was reached
+            count++;
+            if (count > plot_rate) {
+                await cl();
+                plot();
+                count=0;
+            }
+
+            stop=Object.values(S).length;
+            for (i=0;i<stop;i++) {
+
+                // determine origin star point
+                p1 = S[i];
+
+                // define kinematic objects for current point
+                x = p1.slice(1,3);
+                v = p1.slice(3,5);
+                a = p1[6];
+                // console.log(i,x,v,a)
+                
+                // determine net acceleration
+                // start iteration from next star id and ascend
+                start=parseInt(p1)+1;
+                for(j=start;j<stop;j++){
+
+                    // interacting point
+                    p2=S[j];
+
+                    // compute force action with single sun mass
+                    f_a = a_plummer(x,p2.slice(1,3),m_sun,plummer_bulge*ly)
+
+                    // add reactio contribution directly to interacting star
+                    // multiply with origin star mass
+                    S[j][6]=add(p2[6],f_a,p1[0]);
+
+                    // add to current acceleration
+                    a = add(a,f_a,-p2[0])
+
+                }
+
+                // from here on acceleration is not needed anymore so reset it in star object
+                S[i][6] = Null;
+
+                // compute velocity change
+                dv=scl(_dt*.5,a);
+                
+                // kick
+                v_h = add(v,dv)
+                // drift
+                S[i][1] = x[0] + v_h[0] * _dt;
+                S[i][2] = x[1] + v_h[1] * _dt;
+                // kick
+                S[i][3] = v_h[0] + dv[0];
+                S[i][4] = v_h[1] + dv[1];
+            }
+
+
+            await sleep(time_delay_ms)
+            t+=dt;
+
+            if (show_iter_time){
+                mean_iter_time=exp_smoothing*(Date.now()-start_time)+(1-exp_smoothing)*mean_iter_time
+                console.log('Iteration time:',mean_iter_time,'ms')
+            }
+            
+        }
+    }
+    // start
+    scatter();
+    v0();
+    leapFrog();
+})();
