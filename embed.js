@@ -17,7 +17,7 @@
     star_mass_max = 5;
     star_mass_min = .2;
     star_scale_factor = .5;         // unit-less
-    time_delay_ms = 0;              // milliseconds
+    time_delay_ms = 1;              // milliseconds
     N = 200;                        // unit-less
     T = 10e+12;                     // years
     /* All parameters are in SI-units */
@@ -29,6 +29,7 @@
     /*░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░*/
 
     /* Canvas UI */
+    window.subprocessesActive = true;
     const scriptTag = document.currentScript;
     const parent = scriptTag.parentElement;
     const [w,h] = [parent.clientWidth,parent.clientHeight];
@@ -52,23 +53,6 @@
         ctx.arc(Math.floor(x+center[0]),Math.floor(y+center[1]), scale*star_scale_factor, 0, 2 * Math.PI);
         ctx.fill();
         ctx.restore();
-    }
-
-    /* add mutation observer to break the compute loop if the parent is removed
-    https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver */
-    const config = { attributes: true, childList: true, subtree: true };
-    const callback = (mutationList, observer) => {
-        for (const mutation of mutationList) {
-          if (mutation.type === 'childList') {
-            containerIsAlive = false;
-            // terminate observer
-            killObserver();
-          }
-        }
-    };
-    const observer = new MutationObserver(callback);
-    function killObserver () {
-        observer.disconnect()
     }
     
     /* Integrated Methods */
@@ -124,7 +108,11 @@
         exp_smoothing=0.2
         mean_iter_time = 0
         
-        while (containerIsAlive && t<T) {
+        while (t<T) {
+
+            if (!window.subprocessesActive) {
+                break
+            }
 
             if (show_iter_time){start_time = Date.now()}
 
@@ -199,8 +187,5 @@
     scatter();
     v0();
     leapFrog();
-
-    // when evenrything is build, listen for mutations
-    observer.observe(parent, config);
 
 })();
