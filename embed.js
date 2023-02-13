@@ -28,11 +28,13 @@
     /*░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░*/
 
     /* Canvas UI */
-    const [w,h] = [window.innerWidth,window.innerHeight];
+    const scriptTag = document.currentScript;
+    const parent = scriptTag.parentElement;
+    const [w,h] = [parent.clientWidth,parent.clientHeight];
     const center = [Math.floor(w/2),Math.floor(h/2)];
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    document.body.appendChild(canvas);
+    parent.appendChild(canvas);
     ctx.canvas.width=w;ctx.canvas.height=h;document.body.style.background='#04050d';
     async function cl(){ctx.clearRect(0,0,canvas.width,canvas.height)}
     function sleep(t){return new Promise(r=>setTimeout(r,t))}
