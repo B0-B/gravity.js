@@ -1,6 +1,7 @@
 (async () => {
 
     /*░░░░░░░░░░░░░░░░░░░░░░ Galaxy Parameters ░░░░░░░░░░░░░░░░░░░░░░*/
+    containerIsAlive = true;
     blur_factor = 5.0;              // star light blur unit-less 
     blur_star_edge = 1;             // star edge blur unit-less
     dt = 10e+7                      // timestep in years
@@ -52,8 +53,25 @@
         ctx.fill();
         ctx.restore();
     }
-    /* Integrated Methods */
+
+    /* add mutation observer to break the compute loop if the parent is removed
+    https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver */
+    const config = { attributes: true, childList: true, subtree: true };
+    const callback = (mutationList, observer) => {
+        for (const mutation of mutationList) {
+          if (mutation.type === 'childList') {
+            containerIsAlive = false;
+            // terminate observer
+            killObserver();
+          }
+        }
+    };
+    const observer = new MutationObserver(callback);
+    function killObserver () {
+        observer.disconnect()
+    }
     
+    /* Integrated Methods */
     function sq (x) {
         /* Benchmarked with 1000 particles */
         return Math.sqrt(x)               //
@@ -106,7 +124,7 @@
         exp_smoothing=0.2
         mean_iter_time = 0
         
-        while (t<T) {
+        while (containerIsAlive && t<T) {
 
             if (show_iter_time){start_time = Date.now()}
 
@@ -181,4 +199,8 @@
     scatter();
     v0();
     leapFrog();
+
+    // when evenrything is build, listen for mutations
+    observer.observe(parent, config);
+
 })();
