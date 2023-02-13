@@ -14,10 +14,10 @@
     show_iter_time = true           // boolean, will show ms in console
     star_color = ['#f5dedc','#c9ffdd','#c2dcff','#c2fffe','#171006'];
     star_mass_max = 5;
-    star_mass_min = .1;
-    star_scale_factor = .3;         // unit-less
+    star_mass_min = .2;
+    star_scale_factor = .5;         // unit-less
     time_delay_ms = 0;              // milliseconds
-    N = 500;                        // unit-less
+    N = 200;                        // unit-less
     T = 10e+12;                     // years
     /* All parameters are in SI-units */
     const   m_sun = 1.989e+30,
@@ -39,6 +39,7 @@
     async function cl(){ctx.clearRect(0,0,canvas.width,canvas.height)}
     function sleep(t){return new Promise(r=>setTimeout(r,t))}
     function draw(x,y,scale,col){
+        ctx.save();
         ctx.fillStyle=col;
         ctx.shadowBlur = scale*blur_star_edge;
         ctx.beginPath();
@@ -49,6 +50,7 @@
         ctx.beginPath();
         ctx.arc(Math.floor(x+center[0]),Math.floor(y+center[1]), scale*star_scale_factor, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.restore();
     }
     /* Integrated Methods */
     
@@ -170,7 +172,7 @@
 
             if (show_iter_time){
                 mean_iter_time=exp_smoothing*(Date.now()-start_time)+(1-exp_smoothing)*mean_iter_time
-                console.log('Iteration time:',mean_iter_time,'ms')
+                // console.log('Iteration time:',mean_iter_time,'ms')
             }
             
         }

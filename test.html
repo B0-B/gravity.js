@@ -4,29 +4,9 @@
         
     </head>
     <body>
-        <script>
-            
-            number = 1.019239019238123*10**57
-            iterations = 1019019238
-
-            /* Square root test */
-            console.log('Square root test of', number)
-            start_time = Date.now()
-            for (let i = 0; i < iterations; i++) {
-                (i*number)**.5
-            }
-            console.log('**.5 time:',(Date.now()-start_time),'ms')
-            start_time = Date.now()
-            for (let i = 0; i < iterations; i++) {
-                Math.sqrt((i*number))
-            }
-            console.log('Math.sqrt time:',(Date.now()-start_time),'ms')
-            start_time = Date.now()
-            for (let i = 0; i < iterations; i++) {
-                Math.pow((i*number),.5)
-            }
-            console.log('Math.pow time:',(Date.now()-start_time),'ms')
-
-        </script>
+        <div style="width: 100%; height: 100vh; padding: 0; margin:0">
+            <!-- <script src="https://b0-b.github.io/gravity.js/embed.js"></script> -->
+            <script src="embed.js"></script>
+        </div>
     </body>
 </html>
